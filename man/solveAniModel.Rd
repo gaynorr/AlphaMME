@@ -11,7 +11,7 @@ solveAniModel(y, X, K)
 
 \item{X}{a matrix with n rows and x columns}
 
-\item{K}{the numeric relationship matrix 
+\item{K}{the numeric relationship matrix
 with n rows and n columns}
 }
 \description{

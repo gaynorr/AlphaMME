@@ -44,7 +44,7 @@ solveUVM <- function(y, X, Z, K) {
 #'
 #' @param y a matrix with n rows and 1 column
 #' @param X a matrix with n rows and x columns
-#' @param K the numeric relationship matrix 
+#' @param K the numeric relationship matrix
 #' with n rows and n columns
 #'
 #' @export
@@ -153,7 +153,7 @@ calcG <- function(X) {
 #'
 #' @references
 #' \cite{Nishio, M, and M. Satoh. 2014. Including Dominance Effects in the Genomic BLUP Method for Genomic Evaluation. PLOS ONE 9(1): e85792.}
-#' 
+#'
 #' @return a matrix of the realized dominance relationships
 #'
 #' @export

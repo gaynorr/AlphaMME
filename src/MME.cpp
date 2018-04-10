@@ -184,7 +184,7 @@ Rcpp::List solveUVM(const arma::mat& y, const arma::mat& X,
 //'
 //' @param y a matrix with n rows and 1 column
 //' @param X a matrix with n rows and x columns
-//' @param K the numeric relationship matrix 
+//' @param K the numeric relationship matrix
 //' with n rows and n columns
 //'
 //' @export
@@ -196,24 +196,24 @@ Rcpp::List solveAniModel(const arma::mat& y,
   int q = X.n_cols;
   double df = double(n)-double(q);
   double offset = log(double(n));
-  
+
   // Construct system of equations for eigendecomposition
   arma::mat S = -(X*inv_sympd(X.t()*X)*X.t());
   S.diag() += 1;
   arma::mat H = K; //Used later
   H.diag() += offset;
   S = S*H*S;
-  
+
   // Compute eigendecomposition
   arma::vec eigval(n);
   arma::mat eigvec(n,n);
   eigen2(eigval, eigvec, S);
-  
+
   // Drop eigenvalues
   eigval = eigval(arma::span(q,eigvec.n_cols-1)) - offset;
   eigvec = eigvec(arma::span(0,eigvec.n_rows-1),
                   arma::span(q,eigvec.n_cols-1));
-  
+
   // Estimate variances and solve equations
   arma::vec eta = eigvec.t()*y;
   Rcpp::List optRes = optimize(*objREML,
@@ -327,7 +327,7 @@ Rcpp::List solveMVM(const arma::mat& Y, const arma::mat& X,
   arma::mat Ve = Vu;
   arma::mat W = Xt.t()*inv_sympd(Xt*Xt.t());
   arma::mat B = Yt*W; //BLUEs
-  arma::mat Gt(m,n), sigma(m,m), BNew, 
+  arma::mat Gt(m,n), sigma(m,m), BNew,
   VeNew(m,m), VuNew(m,m);
   double denom, numer;
   bool converging=true;
@@ -410,7 +410,7 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
   arma::mat Ve = Vu;
   arma::mat W = Xt.t()*inv_sympd(Xt*Xt.t());
   arma::mat B = Yt*W; //BLUEs
-  arma::mat Gt(m,n), sigma(m,m), BNew, 
+  arma::mat Gt(m,n), sigma(m,m), BNew,
   VeNew(m,m), VuNew(m,m);
   double denom, numer;
   bool converging=true;
@@ -494,7 +494,7 @@ Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
   }
   arma::mat A(k+1,k+1), W0(n,n), W(n,n), WX(n,q), WQX(n,n);
   arma::vec qvec(k+1), sigma(k+1);
-  double rss, ldet, llik, llik0, deltaLlik, taper, 
+  double rss, ldet, llik, llik0, deltaLlik, taper,
   value, sign;
   bool invPass;
   arma::field<arma::mat> T(k);
@@ -608,7 +608,7 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
   }
   arma::mat A(k+1,k+1), W0(n,n), W(n,n), WX(n,q), WQX(n,n);
   arma::vec qvec(k+1), sigma(k+1);
-  double rss, ldet, llik, llik0, deltaLlik, taper, 
+  double rss, ldet, llik, llik0, deltaLlik, taper,
   value, sign;
   bool invPass;
   arma::field<arma::mat> T(k);
@@ -724,7 +724,7 @@ arma::mat calcG(arma::mat X){
 //'
 //' @references
 //' \cite{Nishio, M, and M. Satoh. 2014. Including Dominance Effects in the Genomic BLUP Method for Genomic Evaluation. PLOS ONE 9(1): e85792.}
-//' 
+//'
 //' @return a matrix of the realized dominance relationships
 //'
 //' @export
@@ -774,7 +774,7 @@ arma::mat calcGIbs(arma::mat X){
 }
 
 // Calculates a distance matrix from a marker matrix
-// Uses binomial theorem trick
+// Uses a binomial theorem trick
 // Inspired by code from:
 // http://blog.felixriedel.com/2013/05/pairwise-distances-in-r/
 // First described here:
@@ -793,7 +793,7 @@ arma::mat calcGIbs(arma::mat X){
 //' @export
 // [[Rcpp::export]]
 arma::mat fastDist(const arma::mat& X){
-  arma::colvec Xn =  sum(square(X),1);
+  arma::colvec Xn = sum(square(X),1);
   arma::mat D = -2*(X*X.t());
   D.each_col() += Xn;
   D.each_row() += Xn.t();
@@ -820,14 +820,14 @@ arma::mat fastDist(const arma::mat& X){
 //' @export
 // [[Rcpp::export]]
 arma::mat fastPairDist(const arma::mat& X, const arma::mat& Y){
-  arma::colvec Xn =  sum(square(X),1);
-  arma::colvec Yn =  sum(square(Y),1);
+  arma::colvec Xn = sum(square(X),1);
+  arma::colvec Yn = sum(square(Y),1);
   arma::mat D = -2*(X*Y.t());
   D.each_col() += Xn;
   D.each_row() += Yn.t();
   D = sqrt(D);
   if(D.has_nan()){
-    D.elem(find_nonfinite(D)).fill(0.0); 
+    D.elem(find_nonfinite(D)).fill(0.0);
   }
   return D;
 }
