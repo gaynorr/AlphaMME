@@ -807,46 +807,46 @@ Rcpp::List solveRRBLUP_EM2(const arma::mat& Y, const arma::mat& X,
   double lambda2 = Ve/Vu2;
   double delta1=0,delta2=0,VeN=0,Vu1N=0,Vu2N=0;
   int iter=0;
-  arma::uword n=Y.n_rows,m=M1.n_cols,q=X.n_cols;
-  arma::mat RHS(q+2*m,q+2*m),LHS(q+2*m,1),Rvec(q+2*m,1);
+  arma::uword n=Y.n_rows,m1=M1.n_cols,m2=M2.n_cols,q=X.n_cols;
+  arma::mat RHS(q+m1+m2,q+m1+m2),LHS(q+m1+m2,1),Rvec(q+m1+m2,1);
   // Top row
   RHS(arma::span(0,q-1),arma::span(0,q-1)) = X.t()*X;
-  RHS(arma::span(0,q-1),arma::span(q,q+m-1)) = X.t()*M1;
-  RHS(arma::span(0,q-1),arma::span(q+m,q+2*m-1)) = X.t()*M2;
+  RHS(arma::span(0,q-1),arma::span(q,q+m1-1)) = X.t()*M1;
+  RHS(arma::span(0,q-1),arma::span(q+m1,q+m1+m2-1)) = X.t()*M2;
   // Second row
-  RHS(arma::span(q,q+m-1),arma::span(0,q-1)) = M1.t()*X;
-  RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)) = M1.t()*M1;
-  RHS(arma::span(q,q+m-1),arma::span(q+m,q+2*m-1)) = M1.t()*M2;
+  RHS(arma::span(q,q+m1-1),arma::span(0,q-1)) = M1.t()*X;
+  RHS(arma::span(q,q+m1-1),arma::span(q,q+m1-1)) = M1.t()*M1;
+  RHS(arma::span(q,q+m1-1),arma::span(q+m1,q+m1+m2-1)) = M1.t()*M2;
   // Third row
-  RHS(arma::span(q+m,q+2*m-1),arma::span(0,q-1)) = M2.t()*X;
-  RHS(arma::span(q+m,q+2*m-1),arma::span(q,q+m-1)) = M2.t()*M1;
-  RHS(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)) = M2.t()*M2;
+  RHS(arma::span(q+m1,q+m1+m2-1),arma::span(0,q-1)) = M2.t()*X;
+  RHS(arma::span(q+m1,q+m1+m2-1),arma::span(q,q+m1-1)) = M2.t()*M1;
+  RHS(arma::span(q+m1,q+m1+m2-1),arma::span(q+m1,q+m1+m2-1)) = M2.t()*M2;
   // Add to diagonal
-  RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag() += lambda1;
-  RHS(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)).diag() += lambda2;
+  RHS(arma::span(q,q+m1-1),arma::span(q,q+m1-1)).diag() += lambda1;
+  RHS(arma::span(q+m1,q+m1+m2-1),arma::span(q+m1,q+m1+m2-1)).diag() += lambda2;
   Rvec(arma::span(0,q-1),0) = X.t()*Y;
-  Rvec(arma::span(q,q+m-1),0) = M1.t()*Y;
-  Rvec(arma::span(q+m,q+2*m-1),0) = M2.t()*Y;
+  Rvec(arma::span(q,q+m1-1),0) = M1.t()*Y;
+  Rvec(arma::span(q+m1,q+m1+m2-1),0) = M2.t()*Y;
   arma::mat RHSinv = inv(RHS);
   LHS = RHSinv*Rvec;
   if(useEM){
     VeN = as_scalar(Y.t()*Y-LHS.t()*Rvec)/(n-q);
     Vu1N = as_scalar(
-      LHS(arma::span(q,q+m-1),0).t()*LHS(arma::span(q,q+m-1),0)+
-        Ve*sum(RHSinv(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag())
-    )/m;
+      LHS(arma::span(q,q+m1-1),0).t()*LHS(arma::span(q,q+m1-1),0)+
+        Ve*sum(RHSinv(arma::span(q,q+m1-1),arma::span(q,q+m1-1)).diag())
+    )/m1;
     Vu2N = as_scalar(
-      LHS(arma::span(q+m,q+2*m-1),0).t()*LHS(arma::span(q+m,q+2*m-1),0)+
-        Ve*sum(RHSinv(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)).diag())
-    )/m;
+      LHS(arma::span(q+m1,q+m1+m2-1),0).t()*LHS(arma::span(q+m1,q+m1+m2-1),0)+
+        Ve*sum(RHSinv(arma::span(q+m1,q+m1+m2-1),arma::span(q+m1,q+m1+m2-1)).diag())
+    )/m2;
     delta1 = VeN/Vu1N-lambda1;
     delta2 = VeN/Vu2N-lambda2;
     while((fabs(delta1)>tol) || (fabs(delta2)>tol)){
       Ve = VeN;
       Vu1 = Vu1N;
       Vu2 = Vu2N;
-      RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag() += delta1;
-      RHS(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)).diag() += delta2;
+      RHS(arma::span(q,q+m1-1),arma::span(q,q+m1-1)).diag() += delta1;
+      RHS(arma::span(q+m1,q+m1+m2-1),arma::span(q+m1,q+m1+m2-1)).diag() += delta2;
       lambda1 += delta1;
       lambda2 += delta2;
       RHSinv = inv(RHS);
@@ -858,13 +858,13 @@ Rcpp::List solveRRBLUP_EM2(const arma::mat& Y, const arma::mat& X,
       }
       VeN = as_scalar(Y.t()*Y-LHS.t()*Rvec)/(n-q);
       Vu1N = as_scalar(
-        LHS(arma::span(q,q+m-1),0).t()*LHS(arma::span(q,q+m-1),0)+
-          Ve*sum(RHSinv(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag())
-      )/m;
+        LHS(arma::span(q,q+m1-1),0).t()*LHS(arma::span(q,q+m1-1),0)+
+          Ve*sum(RHSinv(arma::span(q,q+m1-1),arma::span(q,q+m1-1)).diag())
+      )/m1;
       Vu2N = as_scalar(
-        LHS(arma::span(q+m,q+2*m-1),0).t()*LHS(arma::span(q+m,q+2*m-1),0)+
-          Ve*sum(RHSinv(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)).diag())
-      )/m;
+        LHS(arma::span(q+m1,q+m1+m2-1),0).t()*LHS(arma::span(q+m1,q+m1+m2-1),0)+
+          Ve*sum(RHSinv(arma::span(q+m1,q+m1+m2-1),arma::span(q+m1,q+m1+m2-1)).diag())
+      )/m2;
       delta1 = VeN/Vu1N-lambda1;
       delta2 = VeN/Vu2N-lambda2;
     }
@@ -872,9 +872,11 @@ Rcpp::List solveRRBLUP_EM2(const arma::mat& Y, const arma::mat& X,
   arma::vec Vu(2);
   Vu(0) = Vu1;
   Vu(1) = Vu2;
-  arma::mat u(m,2);
-  u.col(0) = LHS.rows(arma::span(q,q+m-1));
-  u.col(1) = LHS.rows(arma::span(q+m,q+2*m-1));
+  arma::field<arma::mat> u(2);
+  u(0).set_size(m1,1);
+  u(1).set_size(m2,1);
+  u(0) = LHS.rows(arma::span(q,q+m1-1));
+  u(1) = LHS.rows(arma::span(q+m1,q+m1+m2-1));
   return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
                             Rcpp::Named("Ve")=Ve,
                             Rcpp::Named("beta")=LHS.rows(arma::span(0,q-1)),
