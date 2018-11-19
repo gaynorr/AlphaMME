@@ -8,10 +8,10 @@
 #' file. Requires knowledge of the number of rows
 #' and columns in the file.
 #'
-#' @param fileName path to the file to read
+#' @param fileName path to the file being read
 #' @param rows number of rows to read in
 #' @param cols number of columns to read in
-#' @param sep a single character seperating data entries
+#' @param sep a single character delimiter seperating data entries
 #' @param skipRows number of rows to skip
 #' @param skipCols number of columns to skip
 #'
@@ -109,10 +109,11 @@ solveRRBLUPMV <- function(Y, X, M, tol = 1e-6, maxIter = 1000L) {
 #' @param Zlist a list of Z matrices
 #' @param Klist a list of K matrices
 #' @param maxIter maximum number of iteration
+#' @param tol tolerance for convergence
 #'
 #' @export
-solveMKM <- function(y, X, Zlist, Klist, maxIter = 40L) {
-    .Call(`_AlphaMME_solveMKM`, y, X, Zlist, Klist, maxIter)
+solveMKM <- function(y, X, Zlist, Klist, maxIter = 40L, tol = 1e-4) {
+    .Call(`_AlphaMME_solveMKM`, y, X, Zlist, Klist, maxIter, tol)
 }
 
 #' @title Solve Multikernel RR-BLUP
@@ -128,6 +129,50 @@ solveMKM <- function(y, X, Zlist, Klist, maxIter = 40L) {
 #' @export
 solveRRBLUPMK <- function(y, X, Mlist, maxIter = 40L) {
     .Call(`_AlphaMME_solveRRBLUPMK`, y, X, Mlist, maxIter)
+}
+
+#' @title Solve RR-BLUP with EM
+#'
+#' @description
+#' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e} using
+#' the Expectation-Maximization algorithm.
+#'
+#' @param Y a matrix with n rows and 1 column
+#' @param X a matrix with n rows and x columns
+#' @param M a matrix with n rows and m columns
+#' @param Vu initial guess for variance of marker effects
+#' @param Ve initial guess for error variance
+#' @param tol tolerance for declaring convergence
+#' @param maxIter maximum iteration for attempting convergence
+#' @param useEM should EM algorithm be used. If false, no estimation of
+#' variance components is performed. The initial values are treated as true.
+#'
+#' @export
+solveRRBLUP_EM <- function(Y, X, M, Vu, Ve, tol = 1e-6, maxIter = 100L, useEM = TRUE) {
+    .Call(`_AlphaMME_solveRRBLUP_EM`, Y, X, M, Vu, Ve, tol, maxIter, useEM)
+}
+
+#' @title Solve RR-BLUP with EM and 2 random effects
+#'
+#' @description
+#' Solves a univariate mixed model of form \eqn{y=X\beta+M_1u_1+M_2u_2+e} using
+#' the Expectation-Maximization algorithm.
+#'
+#' @param Y a matrix with n rows and 1 column
+#' @param X a matrix with n rows and x columns
+#' @param M1 a matrix with n rows and m1 columns
+#' @param M2 a matrix with n rows and m2 columns
+#' @param Vu1 initial guess for variance of the first marker effects
+#' @param Vu2 initial guess for variance of the second marker effects
+#' @param Ve initial guess for error variance
+#' @param tol tolerance for declaring convergence
+#' @param maxIter maximum iteration for attempting convergence
+#' @param useEM should EM algorithm be used. If false, no estimation of
+#' variance components is performed. The initial values are treated as true.
+#'
+#' @export
+solveRRBLUP_EM2 <- function(Y, X, M1, M2, Vu1, Vu2, Ve, tol = 1e-6, maxIter = 100L, useEM = TRUE) {
+    .Call(`_AlphaMME_solveRRBLUP_EM2`, Y, X, M1, M2, Vu1, Vu2, Ve, tol, maxIter, useEM)
 }
 
 #' @title Calculate G Matrix

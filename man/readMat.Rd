@@ -4,16 +4,17 @@
 \alias{readMat}
 \title{Read Matrix}
 \usage{
-readMat(fileName, rows, cols, sep = " ", skipRows = 0L, skipCols = 0L)
+readMat(fileName, rows, cols, sep = " ", skipRows = 0L,
+  skipCols = 0L)
 }
 \arguments{
-\item{fileName}{path to the file to read}
+\item{fileName}{path to the file being read}
 
 \item{rows}{number of rows to read in}
 
 \item{cols}{number of columns to read in}
 
-\item{sep}{a single character seperating data entries}
+\item{sep}{a single character delimiter seperating data entries}
 
 \item{skipRows}{number of rows to skip}
 

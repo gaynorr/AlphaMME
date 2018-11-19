@@ -3,13 +3,27 @@
 #include "alphamme.h"
 #include <iostream>
 #include <string>
+#ifdef ARMA_USE_LAPACK
 
-// Note: Fortran compiler appends '_' to subroutine name
-// See http://www.netlib.org/lapack/explore-html/ for description of args
-extern "C" void dsyevr_(char* JOBZ, char* RANGE, char* UPLO, long long int* N, double* A, long long int* LDA, double* VL,
-                       double* VU, long long int* IL, long long int* IU, double* ABSTOL, long long int* M, double* W, double* Z,
-                       long long int* LDZ, long long int* ISUPPZ, double* WORK, long long int* LWORK, long long int* IWORK,
-                       long long int* LIWORK, long long int* INFO);
+#if !defined(ARMA_BLAS_CAPITALS)
+#define arma_dsyevr dsyevr
+#else
+#define arma_dsyevr DSYEVR
+#endif
+
+extern "C"
+void arma_fortran(arma_dsyevr)(char* JOBZ, char* RANGE, char* UPLO, long long int* N, double* A, long long int* LDA, double* VL,
+                                          double* VU, long long int* IL, long long int* IU, double* ABSTOL, long long int* M, double* W, double* Z,
+                                          long long int* LDZ, long long int* ISUPPZ, double* WORK, long long int* LWORK, long long int* IWORK,
+                                          long long int* LIWORK, long long int* INFO);
+#endif
+
+// // Note: Fortran compiler appends '_' to subroutine name
+// // See http://www.netlib.org/lapack/explore-html/ for description of args
+// extern "C" void dsyevr_(char* JOBZ, char* RANGE, char* UPLO, long long int* N, double* A, long long int* LDA, double* VL,
+//                        double* VU, long long int* IL, long long int* IU, double* ABSTOL, long long int* M, double* W, double* Z,
+//                        long long int* LDZ, long long int* ISUPPZ, double* WORK, long long int* LWORK, long long int* IWORK,
+//                        long long int* LIWORK, long long int* INFO);
 
 // Replacement for Armadillo's eig_sym
 // Fixes an error with decompisition of large matrices on Eddie
@@ -46,15 +60,15 @@ int eigen2(arma::vec& eigval, arma::mat& eigvec, arma::mat X,
   long long int LIWORK = -1; // To be calculated
   long long int INFO = 0;
   // Calculate LWORK and LIWORK
-  dsyevr_(&JOBZ,&RANGE,&UPLO,&N,&*X.begin(),&LDA,&VL,&VU,&IL,&IU,&ABSTOL,&M,&*eigval.begin(),
-          &*eigvec.begin(),&LDZ,&*ISUPPZ.begin(),&tmpWORK,&LWORK,&tmpIWORK,&LIWORK,&INFO);
+  F77_CALL(dsyevr)(&JOBZ,&RANGE,&UPLO,&N,&*X.begin(),&LDA,&VL,&VU,&IL,&IU,&ABSTOL,&M,&*eigval.begin(),
+           &*eigvec.begin(),&LDZ,&*ISUPPZ.begin(),&tmpWORK,&LWORK,&tmpIWORK,&LIWORK,&INFO);
   LWORK = (long long int) tmpWORK;
   LIWORK = tmpIWORK;
   // Allocate WORK and IWORK
   arma::vec WORK(LWORK);
   arma::Col<long long int> IWORK(LIWORK);
   // Perform decomposition
-  dsyevr_(&JOBZ,&RANGE,&UPLO,&N,&*X.begin(),&LDA,&VL,&VU,&IL,&IU,&ABSTOL,&M,&*eigval.begin(),
+  F77_CALL(dsyevr)(&JOBZ,&RANGE,&UPLO,&N,&*X.begin(),&LDA,&VL,&VU,&IL,&IU,&ABSTOL,&M,&*eigval.begin(),
           &*eigvec.begin(),&LDZ,&*ISUPPZ.begin(),&*WORK.begin(),&LWORK,&*IWORK.begin(),&LIWORK,&INFO);
   return INFO; // Return error code
 }
@@ -77,10 +91,10 @@ Rcpp::List objREML(double param, Rcpp::List args){
 //' file. Requires knowledge of the number of rows
 //' and columns in the file.
 //'
-//' @param fileName path to the file to read
+//' @param fileName path to the file being read
 //' @param rows number of rows to read in
 //' @param cols number of columns to read in
-//' @param sep a single character seperating data entries
+//' @param sep a single character delimiter seperating data entries
 //' @param skipRows number of rows to skip
 //' @param skipCols number of columns to skip
 //'
@@ -476,14 +490,14 @@ Rcpp::List solveRRBLUPMV(const arma::mat& Y, const arma::mat& X,
 //' @param Zlist a list of Z matrices
 //' @param Klist a list of K matrices
 //' @param maxIter maximum number of iteration
+//' @param tol tolerance for convergence
 //'
 //' @export
 // [[Rcpp::export]]
 Rcpp::List solveMKM(arma::mat& y, arma::mat& X,
                      arma::field<arma::mat>& Zlist,
                      arma::field<arma::mat>& Klist,
-                     int maxIter=40){
-  double tol = 1e-4;
+                     int maxIter=40, double tol=1e-4){
   int k = Klist.n_elem;
   int n = y.n_rows;
   int q = X.n_cols;
@@ -695,6 +709,179 @@ Rcpp::List solveRRBLUPMK(arma::mat& y, arma::mat& X,
                             Rcpp::Named("LL")=llik,
                             Rcpp::Named("iter")=iter);
 }
+
+//' @title Solve RR-BLUP with EM
+//'
+//' @description
+//' Solves a univariate mixed model of form \eqn{y=X\beta+Mu+e} using
+//' the Expectation-Maximization algorithm.
+//'
+//' @param Y a matrix with n rows and 1 column
+//' @param X a matrix with n rows and x columns
+//' @param M a matrix with n rows and m columns
+//' @param Vu initial guess for variance of marker effects
+//' @param Ve initial guess for error variance
+//' @param tol tolerance for declaring convergence
+//' @param maxIter maximum iteration for attempting convergence
+//' @param useEM should EM algorithm be used. If false, no estimation of
+//' variance components is performed. The initial values are treated as true.
+//'
+//' @export
+// [[Rcpp::export]]
+Rcpp::List solveRRBLUP_EM(const arma::mat& Y, const arma::mat& X,
+                          const arma::mat& M, double Vu, double Ve,
+                          double tol=1e-6, int maxIter=100,
+                          bool useEM=true){
+  double lambda = Ve/Vu;
+  double delta=0;
+  int iter=0;
+  arma::uword n=Y.n_rows,m=M.n_cols,q=X.n_cols;
+  arma::mat RHS(q+m,q+m),LHS(q+m,1),Rvec(q+m,1);
+  RHS(arma::span(0,q-1),arma::span(0,q-1)) = X.t()*X;
+  RHS(arma::span(0,q-1),arma::span(q,q+m-1)) = X.t()*M;
+  RHS(arma::span(q,q+m-1),arma::span(0,q-1)) = M.t()*X;
+  RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)) = M.t()*M;
+  RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag() += lambda;
+  Rvec(arma::span(0,q-1),0) = X.t()*Y;
+  Rvec(arma::span(q,q+m-1),0) = M.t()*Y;
+  arma::mat RHSinv = pinv(RHS);
+  LHS = RHSinv*Rvec;
+  if(useEM){
+    Ve = as_scalar(Y.t()*Y-LHS.t()*Rvec)/(n-q);
+    Vu = as_scalar(
+      LHS(arma::span(q,q+m-1),0).t()*LHS(arma::span(q,q+m-1),0)+
+        Ve*sum(RHSinv(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag())
+    )/m;
+    delta = Ve/Vu-lambda;
+    while(fabs(delta)>tol){
+      RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag() += delta;
+      lambda += delta;
+      RHSinv = pinv(RHS);
+      LHS = RHSinv*Rvec;
+      iter++;
+      if(iter>=maxIter){
+        Rcpp::Rcerr<<"Warning: did not converge, reached maxIter\n";
+        break;
+      }
+      Ve = as_scalar(Y.t()*Y-LHS.t()*Rvec)/(n-q);
+      Vu = as_scalar(
+        LHS(arma::span(q,q+m-1),0).t()*LHS(arma::span(q,q+m-1),0)+
+          Ve*sum(RHSinv(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag())
+      )/m;
+      delta = Ve/Vu-lambda;
+    }
+  }
+  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("beta")=LHS.rows(arma::span(0,q-1)),
+                            Rcpp::Named("u")=LHS.rows(arma::span(q,q+m-1)),
+                            Rcpp::Named("iter")=iter);
+}
+
+//' @title Solve RR-BLUP with EM and 2 random effects
+//'
+//' @description
+//' Solves a univariate mixed model of form \eqn{y=X\beta+M_1u_1+M_2u_2+e} using
+//' the Expectation-Maximization algorithm.
+//'
+//' @param Y a matrix with n rows and 1 column
+//' @param X a matrix with n rows and x columns
+//' @param M1 a matrix with n rows and m1 columns
+//' @param M2 a matrix with n rows and m2 columns
+//' @param Vu1 initial guess for variance of the first marker effects
+//' @param Vu2 initial guess for variance of the second marker effects
+//' @param Ve initial guess for error variance
+//' @param tol tolerance for declaring convergence
+//' @param maxIter maximum iteration for attempting convergence
+//' @param useEM should EM algorithm be used. If false, no estimation of
+//' variance components is performed. The initial values are treated as true.
+//'
+//' @export
+// [[Rcpp::export]]
+Rcpp::List solveRRBLUP_EM2(const arma::mat& Y, const arma::mat& X,
+                           const arma::mat& M1, const arma::mat& M2,
+                           double Vu1, double Vu2, double Ve,
+                           double tol=1e-6, int maxIter=100,
+                           bool useEM=true){
+  double lambda1 = Ve/Vu1;
+  double lambda2 = Ve/Vu2;
+  double delta1=0,delta2=0,VeN=0,Vu1N=0,Vu2N=0;
+  int iter=0;
+  arma::uword n=Y.n_rows,m=M1.n_cols,q=X.n_cols;
+  arma::mat RHS(q+2*m,q+2*m),LHS(q+2*m,1),Rvec(q+2*m,1);
+  // Top row
+  RHS(arma::span(0,q-1),arma::span(0,q-1)) = X.t()*X;
+  RHS(arma::span(0,q-1),arma::span(q,q+m-1)) = X.t()*M1;
+  RHS(arma::span(0,q-1),arma::span(q+m,q+2*m-1)) = X.t()*M2;
+  // Second row
+  RHS(arma::span(q,q+m-1),arma::span(0,q-1)) = M1.t()*X;
+  RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)) = M1.t()*M1;
+  RHS(arma::span(q,q+m-1),arma::span(q+m,q+2*m-1)) = M1.t()*M2;
+  // Third row
+  RHS(arma::span(q+m,q+2*m-1),arma::span(0,q-1)) = M2.t()*X;
+  RHS(arma::span(q+m,q+2*m-1),arma::span(q,q+m-1)) = M2.t()*M1;
+  RHS(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)) = M2.t()*M2;
+  // Add to diagonal
+  RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag() += lambda1;
+  RHS(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)).diag() += lambda2;
+  Rvec(arma::span(0,q-1),0) = X.t()*Y;
+  Rvec(arma::span(q,q+m-1),0) = M1.t()*Y;
+  Rvec(arma::span(q+m,q+2*m-1),0) = M2.t()*Y;
+  arma::mat RHSinv = inv(RHS);
+  LHS = RHSinv*Rvec;
+  if(useEM){
+    VeN = as_scalar(Y.t()*Y-LHS.t()*Rvec)/(n-q);
+    Vu1N = as_scalar(
+      LHS(arma::span(q,q+m-1),0).t()*LHS(arma::span(q,q+m-1),0)+
+        Ve*sum(RHSinv(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag())
+    )/m;
+    Vu2N = as_scalar(
+      LHS(arma::span(q+m,q+2*m-1),0).t()*LHS(arma::span(q+m,q+2*m-1),0)+
+        Ve*sum(RHSinv(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)).diag())
+    )/m;
+    delta1 = VeN/Vu1N-lambda1;
+    delta2 = VeN/Vu2N-lambda2;
+    while((fabs(delta1)>tol) || (fabs(delta2)>tol)){
+      Ve = VeN;
+      Vu1 = Vu1N;
+      Vu2 = Vu2N;
+      RHS(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag() += delta1;
+      RHS(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)).diag() += delta2;
+      lambda1 += delta1;
+      lambda2 += delta2;
+      RHSinv = inv(RHS);
+      LHS = RHSinv*Rvec;
+      iter++;
+      if(iter>=maxIter){
+        Rcpp::Rcerr<<"Warning: did not converge, reached maxIter\n";
+        break;
+      }
+      VeN = as_scalar(Y.t()*Y-LHS.t()*Rvec)/(n-q);
+      Vu1N = as_scalar(
+        LHS(arma::span(q,q+m-1),0).t()*LHS(arma::span(q,q+m-1),0)+
+          Ve*sum(RHSinv(arma::span(q,q+m-1),arma::span(q,q+m-1)).diag())
+      )/m;
+      Vu2N = as_scalar(
+        LHS(arma::span(q+m,q+2*m-1),0).t()*LHS(arma::span(q+m,q+2*m-1),0)+
+          Ve*sum(RHSinv(arma::span(q+m,q+2*m-1),arma::span(q+m,q+2*m-1)).diag())
+      )/m;
+      delta1 = VeN/Vu1N-lambda1;
+      delta2 = VeN/Vu2N-lambda2;
+    }
+  }
+  arma::vec Vu(2);
+  Vu(0) = Vu1;
+  Vu(1) = Vu2;
+  arma::mat u(m,2);
+  u.col(0) = LHS.rows(arma::span(q,q+m-1));
+  u.col(1) = LHS.rows(arma::span(q+m,q+2*m-1));
+  return Rcpp::List::create(Rcpp::Named("Vu")=Vu,
+                            Rcpp::Named("Ve")=Ve,
+                            Rcpp::Named("beta")=LHS.rows(arma::span(0,q-1)),
+                            Rcpp::Named("u")=u,
+                            Rcpp::Named("iter")=iter);
+}
+
 
 //' @title Calculate G Matrix
 //'

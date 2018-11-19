@@ -4,8 +4,11 @@
 #' @title Alpha Mixed Model Equations
 #'
 #' @description
-#' This package contains mixed model equation solvers written in C++.
+#' This package is designed for genomic selection. It contains
+#' several mixed model equation solvers from other R packages.
+#' The solvers have been rewritten in C++ and streamlined for
+#' increased speed and more efficient memory usage.
 #'
 #' @docType package
-#' @name AlphaMME-package
+#' @name AlphaMME
 NULL

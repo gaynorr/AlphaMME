@@ -94,8 +94,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // solveMKM
-Rcpp::List solveMKM(arma::mat& y, arma::mat& X, arma::field<arma::mat>& Zlist, arma::field<arma::mat>& Klist, int maxIter);
-RcppExport SEXP _AlphaMME_solveMKM(SEXP ySEXP, SEXP XSEXP, SEXP ZlistSEXP, SEXP KlistSEXP, SEXP maxIterSEXP) {
+Rcpp::List solveMKM(arma::mat& y, arma::mat& X, arma::field<arma::mat>& Zlist, arma::field<arma::mat>& Klist, int maxIter, double tol);
+RcppExport SEXP _AlphaMME_solveMKM(SEXP ySEXP, SEXP XSEXP, SEXP ZlistSEXP, SEXP KlistSEXP, SEXP maxIterSEXP, SEXP tolSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -104,7 +104,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::field<arma::mat>& >::type Zlist(ZlistSEXP);
     Rcpp::traits::input_parameter< arma::field<arma::mat>& >::type Klist(KlistSEXP);
     Rcpp::traits::input_parameter< int >::type maxIter(maxIterSEXP);
-    rcpp_result_gen = Rcpp::wrap(solveMKM(y, X, Zlist, Klist, maxIter));
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    rcpp_result_gen = Rcpp::wrap(solveMKM(y, X, Zlist, Klist, maxIter, tol));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -119,6 +120,44 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::field<arma::mat>& >::type Mlist(MlistSEXP);
     Rcpp::traits::input_parameter< int >::type maxIter(maxIterSEXP);
     rcpp_result_gen = Rcpp::wrap(solveRRBLUPMK(y, X, Mlist, maxIter));
+    return rcpp_result_gen;
+END_RCPP
+}
+// solveRRBLUP_EM
+Rcpp::List solveRRBLUP_EM(const arma::mat& Y, const arma::mat& X, const arma::mat& M, double Vu, double Ve, double tol, int maxIter, bool useEM);
+RcppExport SEXP _AlphaMME_solveRRBLUP_EM(SEXP YSEXP, SEXP XSEXP, SEXP MSEXP, SEXP VuSEXP, SEXP VeSEXP, SEXP tolSEXP, SEXP maxIterSEXP, SEXP useEMSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type M(MSEXP);
+    Rcpp::traits::input_parameter< double >::type Vu(VuSEXP);
+    Rcpp::traits::input_parameter< double >::type Ve(VeSEXP);
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    Rcpp::traits::input_parameter< int >::type maxIter(maxIterSEXP);
+    Rcpp::traits::input_parameter< bool >::type useEM(useEMSEXP);
+    rcpp_result_gen = Rcpp::wrap(solveRRBLUP_EM(Y, X, M, Vu, Ve, tol, maxIter, useEM));
+    return rcpp_result_gen;
+END_RCPP
+}
+// solveRRBLUP_EM2
+Rcpp::List solveRRBLUP_EM2(const arma::mat& Y, const arma::mat& X, const arma::mat& M1, const arma::mat& M2, double Vu1, double Vu2, double Ve, double tol, int maxIter, bool useEM);
+RcppExport SEXP _AlphaMME_solveRRBLUP_EM2(SEXP YSEXP, SEXP XSEXP, SEXP M1SEXP, SEXP M2SEXP, SEXP Vu1SEXP, SEXP Vu2SEXP, SEXP VeSEXP, SEXP tolSEXP, SEXP maxIterSEXP, SEXP useEMSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type M1(M1SEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type M2(M2SEXP);
+    Rcpp::traits::input_parameter< double >::type Vu1(Vu1SEXP);
+    Rcpp::traits::input_parameter< double >::type Vu2(Vu2SEXP);
+    Rcpp::traits::input_parameter< double >::type Ve(VeSEXP);
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    Rcpp::traits::input_parameter< int >::type maxIter(maxIterSEXP);
+    Rcpp::traits::input_parameter< bool >::type useEM(useEMSEXP);
+    rcpp_result_gen = Rcpp::wrap(solveRRBLUP_EM2(Y, X, M1, M2, Vu1, Vu2, Ve, tol, maxIter, useEM));
     return rcpp_result_gen;
 END_RCPP
 }

@@ -1,13 +1,15 @@
 Package: AlphaMME
 Type: Package
 Title: Alpha Mixed Model Equations
-Version: 0.1.0
-Date: 2018-01-25
-Authors@R: c(person("Chris","Gaynor",email="gaynor.robert@hotmail.com",role="cre"))
-Description: This package contains mixed model equation solvers written in C++.
+Version: 0.1.1
+Date: 2018-11-04
+Authors@R: c(person("Chris","Gaynor",email="gaynor.robert@hotmail.com",role=c("aut","cre")))
+Description: Fast mixed model solvers for genomic selection. All solvers are written in C++ 
+  and based on solvers found in other R packages.
 License: MIT + file LICENSE
 URL: https://bitbucket.org/hickeyjohnteam/alphamme
-Imports: Rcpp (>= 0.12.13), RcppArmadillo
+Imports: Rcpp (>= 0.12.13)
 LinkingTo: Rcpp, RcppArmadillo
-RoxygenNote: 6.0.1
+Encoding: UTF-8
+RoxygenNote: 6.1.0
 NeedsCompilation: true
