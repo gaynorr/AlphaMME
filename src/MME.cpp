@@ -18,6 +18,8 @@ void arma_fortran(arma_dsyevr)(char* JOBZ, char* RANGE, char* UPLO, long long in
                                           long long int* LIWORK, long long int* INFO);
 #endif
 
+const double PI = 3.14159265358979323846;
+
 // // Note: Fortran compiler appends '_' to subroutine name
 // // See http://www.netlib.org/lapack/explore-html/ for description of args
 // extern "C" void dsyevr_(char* JOBZ, char* RANGE, char* UPLO, long long int* N, double* A, long long int* LDA, double* VL,
